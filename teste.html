@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bloco de Notas Mágico</title>
+    <link rel="stylesheet" href="teste.css">
+   
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 class="pulse">Bloco de Notas</h1>
+            <p class="subtitle">Se motive mais para conseguir cosquitar seu hábito!</p>
+        </header>
+        
+        <div class="app-body">
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            
+            <div class="input-group">
+                <input type="text" id="taskInput" placeholder="Adicione uma nova tarefa...">
+                <button id="addTaskBtn">+</button>
+            </div>
+            
+            <ul class="task-list" id="taskList"></ul>
+            
+            <div class="stats">
+                <div>Total: <span id="totalTasks">0</span></div>
+                <div>Completas: <span id="completedTasks">0</span></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="celebration-modal" id="celebrationModal">
+        <div class="celebration-content">
+            <h2>Parabéns!</h2>
+            <p>Você completou mais uma tarefa! Continue assim!</p>
+            <button id="closeCelebrationBtn">1% melhor a cada dia!</button>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const taskInput = document.getElementById('taskInput');
+            const addTaskBtn = document.getElementById('addTaskBtn');
+            const taskList = document.getElementById('taskList');
+            const totalTasksSpan = document.getElementById('totalTasks');
+            const completedTasksSpan = document.getElementById('completedTasks');
+            const progressBar = document.getElementById('progressBar');
+            const celebrationModal = document.getElementById('celebrationModal');
+            const closeCelebrationBtn = document.getElementById('closeCelebrationBtn');
+            
+            let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+            
+            // Carregar tarefas
+            function loadTasks() {
+                taskList.innerHTML = '';
+                let completedCount = 0;
+                
+                tasks.forEach((task, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'task-item' + (task.completed ? ' completed' : '');
+                    
+                    li.innerHTML = `
+                        <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} data-index="${index}">
+                        <span class="task-text">${task.text}</span>
+                        <button class="task-delete" data-index="${index}">×</button>
+                    `;
+                    
+                    taskList.appendChild(li);
+                    
+                    if (task.completed) completedCount++;
+                });
+                
+                totalTasksSpan.textContent = tasks.length;
+                completedTasksSpan.textContent = completedCount;
+                
+                // Atualizar barra de progresso
+                const progress = tasks.length > 0 ? (completedCount / tasks.length) * 100 : 0;
+                progressBar.style.width = `${progress}%`;
+            }
+            
+            // Adicionar tarefa
+            function addTask() {
+                const text = taskInput.value.trim();
+                if (text === '') return;
+                
+                tasks.push({
+                    text: text,
+                    completed: false
+                });
+                
+                saveTasks();
+                taskInput.value = '';
+                loadTasks();
+                
+                // Efeito de adição
+                if (taskList.lastChild) {
+                    taskList.lastChild.style.transform = 'scale(0.9)';
+                    taskList.lastChild.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        taskList.lastChild.style.transform = 'scale(1)';
+                        taskList.lastChild.style.opacity = '1';
+                        taskList.lastChild.classList.add('bounce');
+                        
+                        setTimeout(() => {
+                            taskList.lastChild.classList.remove('bounce');
+                        }, 1000);
+                    }, 10);
+                }
+            }
+            
+            // Alternar status da tarefa
+            function toggleTask(index) {
+                tasks[index].completed = !tasks[index].completed;
+                saveTasks();
+                loadTasks();
+                
+                if (tasks[index].completed) {
+                    // Mostrar animação de celebração
+                    showCelebration();
+                    
+                    // Criar confetes
+                    createConfetti();
+                }
+            }
+            
+            // Deletar tarefa
+            function deleteTask(index) {
+                const taskItem = document.querySelector(`.task-delete[data-index="${index}"]`).parentElement;
+                taskItem.classList.add('spin');
+                
+                setTimeout(() => {
+                    tasks.splice(index, 1);
+                    saveTasks();
+                    loadTasks();
+                }, 500);
+            }
+            
+            // Salvar tarefas no localStorage
+            function saveTasks() {
+                localStorage.setItem('tasks', JSON.stringify(tasks));
+            }
+            
+            // Mostrar animação de celebração
+            function showCelebration() {
+                celebrationModal.classList.add('active');
+                
+                // Adicionar efeito de pulse no conteúdo
+                const content = celebrationModal.querySelector('.celebration-content');
+                content.classList.add('pulse');
+                
+                setTimeout(() => {
+                    content.classList.remove('pulse');
+                }, 2000);
+            }
+            
+            // Criar efeito de confete
+            function createConfetti() {
+                const colors = ['#6c5ce7', '#a29bfe', '#fd79a8', '#00b894', '#fdcb6e'];
+                
+                for (let i = 0; i < 50; i++) {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.left = Math.random() * 100 + 'vw';
+                    confetti.style.top = -10 + 'px';
+                    confetti.style.width = Math.random() * 10 + 5 + 'px';
+                    confetti.style.height = Math.random() * 10 + 5 + 'px';
+                    confetti.style.opacity = Math.random() + 0.5;
+                    
+                    document.body.appendChild(confetti);
+                    
+                    // Animação do confete
+                    const animationDuration = Math.random() * 3 + 2;
+                    
+                    confetti.style.transition = `all ${animationDuration}s ease-out`;
+                    
+                    setTimeout(() => {
+                        confetti.style.top = 100 + 'vh';
+                        confetti.style.transform = `rotate(${Math.random() * 360}deg) translateX(${Math.random() * 100 - 50}px)`;
+                        confetti.style.opacity = '0';
+                    }, 10);
+                    
+                    // Remover confete após animação
+                    setTimeout(() => {
+                        confetti.remove();
+                    }, animationDuration * 1000);
+                }
+            }
+            
+            // Event listeners
+            addTaskBtn.addEventListener('click', addTask);
+            
+            taskInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') addTask();
+            });
+            
+            taskList.addEventListener('click', function(e) {
+                if (e.target.classList.contains('task-checkbox')) {
+                    const index = e.target.getAttribute('data-index');
+                    toggleTask(index);
+                }
+                
+                if (e.target.classList.contains('task-delete')) {
+                    const index = e.target.getAttribute('data-index');
+                    deleteTask(index);
+                }
+            });
+            
+            closeCelebrationBtn.addEventListener('click', function() {
+                celebrationModal.classList.remove('active');
+            });
+            
+            // Carregar tarefas inicialmente
+            loadTasks();
+            
+            // Efeito de digitação no placeholder
+            const placeholders = [
+                "Adicione uma nova tarefa...",
+                "O que você precisa fazer hoje?",
+                "Organize sua vida aqui!",
+                "Escreva sua próxima tarefa...",
+                "Vamos ser produtivos!"
+            ];
+            
+            let currentPlaceholder = 0;
+            let charIndex = 0;
+            let isDeleting = false;
+            let typingSpeed = 100;
+            
+            function typePlaceholder() {
+                const fullText = placeholders[currentPlaceholder];
+                
+                if (isDeleting) {
+                    taskInput.placeholder = fullText.substring(0, charIndex - 1);
+                    charIndex--;
+                    typingSpeed = 50;
+                } else {
+                    taskInput.placeholder = fullText.substring(0, charIndex + 1);
+                    charIndex++;
+                    typingSpeed = 100;
+                }
+                
+                if (!isDeleting && charIndex === fullText.length) {
+                    isDeleting = true;
+                    typingSpeed = 1500;
+                } else if (isDeleting && charIndex === 0) {
+                    isDeleting = false;
+                    currentPlaceholder = (currentPlaceholder + 1) % placeholders.length;
+                    typingSpeed = 500;
+                }
+                
+                setTimeout(typePlaceholder, typingSpeed);
+            }
+            
+            // Iniciar efeito de digitação
+            setTimeout(typePlaceholder, 1000);
+        });
+    </script>
+</body>
+</html>
